@@ -12,3 +12,5 @@ require (
 	golang.org/x/net v0.0.0-20201207224615-747e23833adb // indirect
 	golang.org/x/tools v0.0.0-20201208062317-e652b2f42cc7 // indirect
 )
+
+replace github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14 => github.com/wsw0108/files v0.0.0-20210425133856-556df22ba9ce
