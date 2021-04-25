@@ -1,6 +1,7 @@
 package httpSwagger
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"regexp"
@@ -16,6 +17,8 @@ var WrapHandler = Handler()
 type Config struct {
 	//The url pointing to API definition (normally swagger.json or swagger.yaml). Default is `doc.json`.
 	URL          string
+	DocYaml      bool
+	YamlMime     string
 	DeepLinking  bool
 	DocExpansion string
 	DomID        string
@@ -25,6 +28,18 @@ type Config struct {
 func URL(url string) func(c *Config) {
 	return func(c *Config) {
 		c.URL = url
+	}
+}
+
+func DocYaml(docYaml bool) func(c *Config) {
+	return func(c *Config) {
+		c.DocYaml = docYaml
+	}
+}
+
+func YamlMime(yamlMime string) func(c *Config) {
+	return func(c *Config) {
+		c.YamlMime = yamlMime
 	}
 }
 
@@ -53,12 +68,21 @@ func DomID(domID string) func(c *Config) {
 func Handler(configFns ...func(*Config)) http.HandlerFunc {
 	config := &Config{
 		URL:          "doc.json",
+		DocYaml:      false,
+		YamlMime:     "application/x-yaml",
 		DeepLinking:  true,
 		DocExpansion: "list",
 		DomID:        "#swagger-ui",
 	}
 	for _, configFn := range configFns {
 		configFn(config)
+	}
+
+	var docPath string
+	if config.DocYaml {
+		docPath = "doc.yaml"
+	} else {
+		docPath = "doc.json"
 	}
 
 	//create a template with name
@@ -78,8 +102,13 @@ func Handler(configFns ...func(*Config)) http.HandlerFunc {
 		switch path {
 		case "index.html":
 			_ = index.Execute(w, config)
-		case "doc.json":
-			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		case docPath:
+			if config.DocYaml {
+				ct := fmt.Sprintf("%s; charset=utf-8", config.YamlMime)
+				w.Header().Set("Content-Type", ct)
+			} else {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			}
 			doc, err := swag.ReadDoc()
 			if err != nil {
 				panic(err)
